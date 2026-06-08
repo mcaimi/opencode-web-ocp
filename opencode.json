@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "openshift": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "vLLM",
+      "options": {
+        "baseURL": "OPENSHIFT_LLM_INFERENCE_ENDPOINT"
+      },
+      "models": {
+        "OPENSHIFT_DEPLOYED_MODEL_NAME": {
+          "name": "CodingAssistant"
+        }
+      }
+    }
+  }
+}
