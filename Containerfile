@@ -7,7 +7,7 @@ FROM ${UBI_IMAGE} AS opencode-download
 ARG OPENCODE_VERSION=1.16.2
 ARG TARGETARCH
 
-RUN microdnf install -y \
+RUN microdnf upgrade -y && microdnf install -y \
   curl \
   gzip \
   tar \
@@ -17,8 +17,8 @@ RUN microdnf install -y \
 RUN set -eux; \
   arch="${TARGETARCH:-$(uname -m)}"; \
   case "$arch" in \
-  amd64|x86_64) opencode_asset="opencode-linux-x64.tar.gz"; ripgrep_target="x86_64-unknown-linux-musl" ;; \
-  arm64|aarch64) opencode_asset="opencode-linux-arm64.tar.gz"; ripgrep_target="aarch64-unknown-linux-gnu" ;; \
+  amd64|x86_64) opencode_asset="opencode-linux-x64.tar.gz" ;; \
+  arm64|aarch64) opencode_asset="opencode-linux-arm64.tar.gz" ;; \
   *) echo "Unsupported architecture: $arch" >&2; exit 1 ;; \
   esac; \
   curl -fsSL \
@@ -34,44 +34,42 @@ FROM registry.access.redhat.com/ubi10/ubi:latest
 FROM ${UBI_IMAGE}
 
 # switch to root to install prerequisites
-USER 0
+USER root
 
-RUN microdnf install -y \
+RUN microdnf upgrade -y && microdnf install -y \
   bash \
   shadow-utils \
   util-linux \
   which \
   git \
   jq \
+  iproute \
+  hostname \
   && microdnf clean all \
   && rm -rf /var/cache/dnf /var/cache/yum
 
 RUN groupadd --system opencode \
-  && useradd --system --create-home --home-dir /home/opencode --gid opencode --shell /bin/bash opencode \
-  && mkdir -p /workspace /home/opencode/.config/opencode /home/opencode/.local/share/opencode
+  && useradd --system --create-home --home-dir /tmp/opencode --gid opencode --shell /bin/bash opencode \
+  && mkdir -p /tmp/opencode/.config/opencode /tmp/opencode/.local/share/opencode
 
+# Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
 COPY entry.sh /usr/local/bin/entrypoint
-COPY opencode.json /home/opencode/.config/opencode/opencode.json
-COPY auth.json /home/opencode/.local/share/opencode/auth.json
-RUN chown -R opencode:opencode /workspace /home/opencode
-RUN chmod 0755 /usr/local/bin/entrypoint
+COPY opencode.json /tmp/opencode/.config/opencode/opencode.json
+COPY auth.json /tmp/opencode/.local/share/opencode/auth.json
 
-ENV HOME=/home/opencode \
-  WORKSPACE_DIR=/workspace \
-  OPENCODE_DISABLE_AUTOUPDATE=true
+# fix permissions
+RUN chown -Rv opencode:0 /tmp/opencode \
+  && chmod 0755 /usr/local/bin/entrypoint && chmod -Rv 0755 /tmp/opencode
 
 # config options
+ENV OPENCODE_DISABLE_AUTOUPDATE=true
 ENV OPENCODE_SERVER_PASSWORD=redhat
 ENV OPENSHIFT_LLM_INFERENCE_ENDPOINT="http://inference.apps.openshift.local"
 ENV OPENSHIFT_DEPLOYED_MODEL_NAME="qwen-coder"
 
-WORKDIR /workspace
-
+# run as user opencode
 USER opencode
-
-ENV HOST=0.0.0.0
-ENV PORT=8080
 
 EXPOSE 8080
 
