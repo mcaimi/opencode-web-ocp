@@ -54,9 +54,9 @@ RUN groupadd --system opencode \
 
 # Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
-COPY entry.sh /usr/local/bin/entrypoint
-COPY opencode.json /tmp/opencode/.config/opencode/opencode.json
-COPY auth.json /tmp/opencode/.local/share/opencode/auth.json
+COPY scripts/entry.sh /usr/local/bin/entrypoint
+COPY config/opencode.json /tmp/opencode/.config/opencode/opencode.json
+COPY config/auth.json /tmp/opencode/.local/share/opencode/auth.json
 
 # fix permissions
 RUN chown -Rv opencode:0 /tmp/opencode \
