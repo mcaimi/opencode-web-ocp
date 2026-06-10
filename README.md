@@ -6,12 +6,14 @@ Deploy [opencode web](https://github.com/anomalyco/opencode) as a containerized 
 
 ## Project structure
 
-| File | Purpose |
+| File/Directory | Purpose |
 |---|---|
-| `Containerfile` | Multi-stage image build — downloads the opencode binary for multiple architectures, packages into UBI minimal. Home dir is `/tmp/opencode` |
-| `entry.sh` | Entrypoint script (as `entrypoint`) — subs env vars into the opencode config, exports config path, then launches `opencode web` |
-| `opencode.json` | OpenCode config (points to OpenShift LLM via `@ai-sdk/openai-compatible` adapter), placed in `/tmp/opencode/.config/opencode/` |
-| `auth.json` | Placeholder auth config (uses `"key": "none"` — override at runtime), placed in `/tmp/opencode/.local/share/opencode/` |
+| `Containerfile` | Multi-stage image build — downloads the opencode binary for multiple architectures, packages into UBI minimal. Home dir is `/tmp/opencode`. User runs as `opencode` (uid arbitrary, gid 0 for OpenShift compatibility) |
+| `scripts/entry.sh` | Entrypoint script (installed as `/usr/local/bin/entrypoint`) — subs env vars into the opencode config, displays proxy settings, exports config path, then launches `opencode web` |
+| `config/opencode.json` | OpenCode config (points to OpenShift LLM via `@ai-sdk/openai-compatible` adapter), placed in `/tmp/opencode/.config/opencode/` |
+| `config/auth.json` | Placeholder auth config (uses `"key": "none"` — override at runtime), placed in `/tmp/opencode/.local/share/opencode/` |
+| `agents/` | Custom opencode agents/subagents, copied to `/tmp/opencode/.config/opencode/agents/` |
+| `helm/` | Helm chart for OpenShift deployment with proxy support, persistent storage, and edge-terminated routes |
 
 ## How runtime config works
 
@@ -113,13 +115,47 @@ oc new-app -i opencode-web-ocp --name=opencode-web-ocp \
 |---|---|---|
 | `OPENSHIFT_DEPLOYED_MODEL_NAME` | `qwen-coder` | Actual model name to use in `opencode.json` |
 | `OPENSHIFT_LLM_INFERENCE_ENDPOINT` | `http://inference.apps.openshift.local` | LLM API base URL |
-| `HOST` | local IP / `localhost` | Bind address (auto-resolved) |
+| `HOST` | local IP / `localhost` | Bind address (auto-resolved from `hostname -i`) |
 | `PORT` | `8080` | Listen port |
-| `OPENCODE_SERVER_PASSWORD` | `redhat` | OpenShift auth password |
+| `OPENCODE_SERVER_PASSWORD` | `redhat` | OpenCode web UI password |
 | `OPENCODE_DISABLE_AUTOUPDATE` | `true` | Disable auto-update |
+| `HTTP_PROXY` | (unset) | HTTP proxy URL (displayed at startup) |
+| `HTTPS_PROXY` | (unset) | HTTPS proxy URL (displayed at startup) |
+| `NO_PROXY` | (unset) | Comma-separated list of domains to exclude from proxy |
+| `JSON_FILE` | `/tmp/opencode/.config/opencode/opencode.json` | Path to opencode config file |
+
+## Helm Chart Deployment
+
+A complete Helm chart is available in the `helm/` directory with support for:
+
+- Dedicated ServiceAccount (`opencode-sa`)
+- Optional PersistentVolumeClaim for `/tmp/opencode`
+- Edge-terminated OpenShift Route with customizable hostname
+- **HTTP/HTTPS proxy support** with automatic Kubernetes/OpenShift NO_PROXY exclusions
+- Configurable resources, replicas, health checks
+
+See [helm/README.md](helm/README.md) for installation instructions and [helm/PROXY-EXAMPLES.md](helm/PROXY-EXAMPLES.md) for proxy configuration scenarios.
+
+### Quick Helm Install
+
+```bash
+# Basic installation
+helm install opencode-web ./helm \
+  --set route.hostname=opencode.apps.your-cluster.com
+
+# With proxy support
+helm install opencode-web ./helm \
+  --set route.hostname=opencode.apps.your-cluster.com \
+  --set proxy.enabled=true \
+  --set proxy.httpProxy=http://proxy.corp.example.com:8080 \
+  --set proxy.httpsProxy=http://proxy.corp.example.com:8080
+```
 
 ## Gotchas
 
-- `opencode.json` uses placeholder values that are replaced at container start
-- `auth.json` contains dummy credentials — mount a real auth file to override
-- Container runs as unprivileged user `opencode`; no additional packages can be installed
+- `opencode.json` uses placeholder values that are replaced at container start by `entry.sh`
+- `auth.json` contains dummy credentials (`"key": "none"`) — mount a real auth file to override
+- Container runs as unprivileged user `opencode` (uid arbitrary, gid 0 for OpenShift)
+- The entrypoint script displays proxy settings (HTTP_PROXY, HTTPS_PROXY, NO_PROXY) at startup for troubleshooting
+- Custom agents in `agents/` directory are automatically copied to `/tmp/opencode/.config/opencode/agents/`
+- No additional packages can be installed at runtime (runs as non-root)

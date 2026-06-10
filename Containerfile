@@ -33,9 +33,7 @@ RUN set -eux; \
 FROM registry.access.redhat.com/ubi10/ubi:latest
 FROM ${UBI_IMAGE}
 
-# switch to root to install prerequisites
-USER root
-
+# install requirements
 RUN microdnf upgrade -y && microdnf install -y \
   bash \
   shadow-utils \
@@ -48,15 +46,17 @@ RUN microdnf upgrade -y && microdnf install -y \
   && microdnf clean all \
   && rm -rf /var/cache/dnf /var/cache/yum
 
-RUN groupadd --system opencode \
-  && useradd --system --create-home --home-dir /tmp/opencode --gid opencode --shell /bin/bash opencode \
-  && mkdir -p /tmp/opencode/.config/opencode /tmp/opencode/.local/share/opencode
+RUN useradd --system --create-home --home-dir /tmp/opencode --gid 0 --shell /bin/bash opencode \
+  && mkdir -p /tmp/opencode/.config/opencode/agents /tmp/opencode/.local/share/opencode
 
 # Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
 COPY scripts/entry.sh /usr/local/bin/entrypoint
 COPY config/opencode.json /tmp/opencode/.config/opencode/opencode.json
 COPY config/auth.json /tmp/opencode/.local/share/opencode/auth.json
+
+# Upload custom subagents
+COPY agents/git-summary.md /tmp/opencode/.config/opencode/agents/git-summary.md
 
 # fix permissions
 RUN chown -Rv opencode:0 /tmp/opencode \
@@ -67,9 +67,6 @@ ENV OPENCODE_DISABLE_AUTOUPDATE=true
 ENV OPENCODE_SERVER_PASSWORD=redhat
 ENV OPENSHIFT_LLM_INFERENCE_ENDPOINT="http://inference.apps.openshift.local"
 ENV OPENSHIFT_DEPLOYED_MODEL_NAME="qwen-coder"
-
-# run as user opencode
-USER opencode
 
 EXPOSE 8080
 

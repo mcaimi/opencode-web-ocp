@@ -47,5 +47,6 @@ HOST=${HOST:-${LOCAL_IP:-localhost}}
 PORT=${PORT:-8080}
 
 echo "Starting opencode web on ${HOST}:${PORT}"
+echo "Using Proxy Settings: HTTP_PROXY=${HTTP_PROXY}, HTTPS_PROXY=${HTTPS_PROXY}, NO_PROXY=${NO_PROXY}"
 
 OPENCODE_CONFIG_DIR="${CUSTOM_CONFIG_DIR}" opencode web --hostname "${HOST}" --port "${PORT}" --cors="*"
