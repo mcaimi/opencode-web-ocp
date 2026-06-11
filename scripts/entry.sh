@@ -3,7 +3,7 @@
 set -e
 
 # config file
-JSON_FILE=${JSON_FILE:-"/tmp/opencode/.config/opencode/opencode.json"}
+JSON_FILE=${JSON_FILE:-"/home/opencode/.config/opencode/opencode.json"}
 
 # Check if JSON_FILE is readable
 if [ ! -r "$JSON_FILE" ]; then
@@ -16,7 +16,7 @@ DEFAULT_MODEL=$(jq -r '.provider.openshift.models | keys[0]' "$JSON_FILE")
 DEFAULT_ENDPOINT=$(jq -r '.provider.openshift.options.baseURL' "$JSON_FILE")
 
 # create local config dir
-CUSTOM_CONFIG_DIR="/tmp/opencode/.config/opencode"
+CUSTOM_CONFIG_DIR="/home/opencode/.config/opencode"
 mkdir -p "$CUSTOM_CONFIG_DIR"
 
 # Substitute model name key and inference endpoint URL

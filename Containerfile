@@ -46,22 +46,23 @@ RUN microdnf upgrade -y && microdnf install -y \
   && microdnf clean all \
   && rm -rf /var/cache/dnf /var/cache/yum
 
-RUN useradd --system --create-home --home-dir /tmp/opencode --gid 0 --shell /bin/bash opencode \
-  && mkdir -p /tmp/opencode/.config/opencode/agents /tmp/opencode/.local/share/opencode /workspace
+RUN useradd --system --create-home --home-dir /home/opencode --gid 0 --shell /bin/bash opencode \
+  && mkdir -p /home/opencode/.config/opencode/agents /home/opencode/.local/share/opencode /workspace
 
 # Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
 COPY scripts/entry.sh /usr/local/bin/entrypoint
-COPY config/opencode.json /tmp/opencode/.config/opencode/opencode.json
-COPY config/auth.json /tmp/opencode/.local/share/opencode/auth.json
+COPY config/opencode.json /home/opencode/.config/opencode/opencode.json
+COPY config/auth.json /home/opencode/.local/share/opencode/auth.json
 
 # Upload custom subagents
-COPY agents/git-summary.md /tmp/opencode/.config/opencode/agents/git-summary.md
-COPY agents/security-auditor.md /tmp/opencode/.config/opencode/agents/security-auditor.md
+COPY agents/git-summary.md /home/opencode/.config/opencode/agents/git-summary.md
+COPY agents/security-auditor.md /home/opencode/.config/opencode/agents/security-auditor.md
 
 # fix permissions
-RUN chown -Rv opencode:0 /tmp/opencode /workspace\
-  && chmod 0755 /usr/local/bin/entrypoint && chmod -Rv 0755 /tmp/opencode /workspace
+RUN chown -Rv opencode:0 /home/opencode /workspace \
+  && chmod -R g=u /home/opencode /workspace \
+  && chmod 0755 /usr/local/bin/entrypoint
 
 # define volume
 VOLUME /workspace
@@ -70,6 +71,7 @@ VOLUME /workspace
 WORKDIR /workspace
 
 # config options
+ENV HOME=/home/opencode
 ENV OPENCODE_DISABLE_AUTOUPDATE=true
 ENV OPENCODE_SERVER_PASSWORD=redhat
 ENV OPENSHIFT_LLM_INFERENCE_ENDPOINT="http://inference.apps.openshift.local"
