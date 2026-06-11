@@ -328,16 +328,6 @@ git diff -p
 - **Credential Handling**: Never expose git credentials in summaries
 - **Private Repository Access**: Ensure appropriate authentication for private repositories
 
-## Future Enhancements
-
-- **Semantic Commit Analysis**: Parse conventional commit messages for categorization
-- **Visual Graphs**: Generate commit graphs and contribution charts
-- **Comparison Mode**: Compare histories between branches or time periods
-- **Export Formats**: Add support for PDF, CSV, HTML outputs
-- **Interactive Mode**: Allow drilling down into specific commits or time periods
-- **AI-Powered Insights**: Use LLM to identify significant changes and patterns
-- **Release Notes Generation**: Automatically generate release notes from commit history
-
 ## License
 
 This agent released under the GPL-v3 License
