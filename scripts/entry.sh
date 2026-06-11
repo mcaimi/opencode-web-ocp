@@ -16,7 +16,7 @@ DEFAULT_MODEL=$(jq -r '.provider.openshift.models | keys[0]' "$JSON_FILE")
 DEFAULT_ENDPOINT=$(jq -r '.provider.openshift.options.baseURL' "$JSON_FILE")
 
 # create local config dir
-CUSTOM_CONFIG_DIR="/tmp/opencode"
+CUSTOM_CONFIG_DIR="/tmp/opencode/.config/opencode"
 mkdir -p "$CUSTOM_CONFIG_DIR"
 
 # Substitute model name key and inference endpoint URL
@@ -50,4 +50,5 @@ echo "Starting opencode web on ${HOST}:${PORT}"
 echo "Using Proxy Settings: HTTP_PROXY=${HTTP_PROXY}, HTTPS_PROXY=${HTTPS_PROXY}, NO_PROXY=${NO_PROXY}"
 
 # start opencode in server mode
-OPENCODE_CONFIG_DIR="${CUSTOM_CONFIG_DIR}" opencode serve --hostname "${HOST}" --port "${PORT}" --cors="*"
+export OPENCODE_CONFIG_DIR="${CUSTOM_CONFIG_DIR}"
+opencode serve --hostname "${HOST}" --port "${PORT}" --cors="*"

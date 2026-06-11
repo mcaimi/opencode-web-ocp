@@ -4,7 +4,7 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
-ARG OPENCODE_VERSION=1.17.2
+ARG OPENCODE_VERSION=1.17.3
 ARG TARGETARCH
 
 RUN microdnf upgrade -y && microdnf install -y \
@@ -65,6 +65,9 @@ RUN chown -Rv opencode:0 /tmp/opencode /workspace\
 
 # define volume
 VOLUME /workspace
+
+# define workdir
+WORKDIR /workspace
 
 # config options
 ENV OPENCODE_DISABLE_AUTOUPDATE=true
