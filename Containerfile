@@ -47,7 +47,7 @@ RUN microdnf upgrade -y && microdnf install -y \
   && rm -rf /var/cache/dnf /var/cache/yum
 
 RUN useradd --system --create-home --home-dir /tmp/opencode --gid 0 --shell /bin/bash opencode \
-  && mkdir -p /tmp/opencode/.config/opencode/agents /tmp/opencode/.local/share/opencode
+  && mkdir -p /tmp/opencode/.config/opencode/agents /tmp/opencode/.local/share/opencode /workspace
 
 # Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
@@ -57,10 +57,14 @@ COPY config/auth.json /tmp/opencode/.local/share/opencode/auth.json
 
 # Upload custom subagents
 COPY agents/git-summary.md /tmp/opencode/.config/opencode/agents/git-summary.md
+COPY agents/security-auditor.md /tmp/opencode/.config/opencode/agents/security-auditor.md
 
 # fix permissions
-RUN chown -Rv opencode:0 /tmp/opencode \
-  && chmod 0755 /usr/local/bin/entrypoint && chmod -Rv 0755 /tmp/opencode
+RUN chown -Rv opencode:0 /tmp/opencode /workspace\
+  && chmod 0755 /usr/local/bin/entrypoint && chmod -Rv 0755 /tmp/opencode /workspace
+
+# define volume
+VOLUME /workspace
 
 # config options
 ENV OPENCODE_DISABLE_AUTOUPDATE=true
