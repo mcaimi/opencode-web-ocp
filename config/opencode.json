@@ -1,11 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "enabled_providers": [
+    "openshift"
+  ],
   "provider": {
     "openshift": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "vLLM",
       "options": {
-        "baseURL": "OPENSHIFT_LLM_INFERENCE_ENDPOINT"
+        "baseURL": "{env:OPENSHIFT_LLM_INFERENCE_ENDPOINT}",
+        "apiKey": "{env:OPENSHIFT_AI_VLLM_API_KEY}"
       },
       "models": {
         "OPENSHIFT_DEPLOYED_MODEL_NAME": {

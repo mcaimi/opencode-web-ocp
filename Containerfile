@@ -29,8 +29,17 @@ RUN set -eux; \
   chmod 0755 /opt/opencode/opencode; \
   /opt/opencode/opencode --version;
 
+# skill downloader
+FROM ${UBI_IMAGE} AS skill-download
+ARG SKILL_REPO=https://github.com/semgrep/skills
+
+RUN microdnf upgrade -y && microdnf install -y git
+
+RUN set -eux; \
+  mkdir -p /opt/skills; \
+  git clone ${SKILL_REPO} /opt/skills && chgrp -R 0 /opt/skills && chmod -R g=u /opt/skills
+
 # Runtime Image
-FROM registry.access.redhat.com/ubi10/ubi:latest
 FROM ${UBI_IMAGE}
 
 # install requirements
@@ -47,13 +56,13 @@ RUN microdnf upgrade -y && microdnf install -y \
   && rm -rf /var/cache/dnf /var/cache/yum
 
 RUN useradd --system --create-home --home-dir /home/opencode --gid 0 --shell /bin/bash opencode \
-  && mkdir -p /home/opencode/.config/opencode/agents /home/opencode/.local/share/opencode /workspace
+  && mkdir -p /home/opencode/.config/opencode/agents /home/opencode/.local/share/opencode /home/opencode/.config/opencode/skills /workspace
 
 # Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
+COPY --from=skill-download /opt/skills/skills/code-security /home/opencode/.config/opencode/skills/code-security
 COPY scripts/entry.sh /usr/local/bin/entrypoint
 COPY config/opencode.json /home/opencode/.config/opencode/opencode.json
-COPY config/auth.json /home/opencode/.local/share/opencode/auth.json
 
 # Upload custom subagents
 COPY agents/git-summary.md /home/opencode/.config/opencode/agents/git-summary.md
@@ -72,10 +81,6 @@ WORKDIR /workspace
 
 # config options
 ENV HOME=/home/opencode
-ENV OPENCODE_DISABLE_AUTOUPDATE=true
-ENV OPENCODE_SERVER_PASSWORD=redhat
-ENV OPENSHIFT_LLM_INFERENCE_ENDPOINT="http://inference.apps.openshift.local"
-ENV OPENSHIFT_DEPLOYED_MODEL_NAME="qwen-coder"
 
 EXPOSE 8080
 
