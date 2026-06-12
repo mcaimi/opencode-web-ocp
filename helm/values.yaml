@@ -1,0 +1,109 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/marcocaimi/opencode-web-ocp
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: "opencode-sa"
+  annotations: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+route:
+  enabled: true
+  # hostname: opencode.apps.example.com
+  hostname: ""
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+persistence:
+  enabled: false
+  storageClassName: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /workspace
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  - name: OPENCODE_AUTOUPDATE
+    value: "true"
+  - name: SERVER_PASSWORD
+    value: "redhat"
+  - name: INFERENCE_ENDPOINT
+    value: "http://inference.apps.openshift.local"
+  - name: MODEL_NAME
+    value: "qwen-coder"
+  - name: APIKEY
+    value: ""
+
+proxy:
+  enabled: false
+  httpProxy: ""
+  httpsProxy: ""
+  noProxy: ""
+  # If noProxy is not specified and proxy is enabled, a default set of exclusions will be used:
+  # - localhost, 127.0.0.1, .local
+  # - .svc, .svc.cluster.local (Kubernetes services)
+  # - Kubernetes service CIDR and pod CIDR (if specified)
+  # Additional custom domains can be added to the default list
+  additionalNoProxy: []
+  # Kubernetes cluster configuration for auto-generating NO_PROXY
+  kubernetes:
+    serviceCIDR: "10.96.0.0/12"
+    podCIDR: "10.244.0.0/16"
+    apiServer: "kubernetes.default.svc"
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3

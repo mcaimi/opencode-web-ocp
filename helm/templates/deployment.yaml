@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "opencode-web.fullname" . }}
+  labels:
+    {{- include "opencode-web.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "opencode-web.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "opencode-web.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "opencode-web.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        env:
+          {{- if .Values.env }}
+          {{- toYaml .Values.env | nindent 10 }}
+          {{- end }}
+          {{- if .Values.proxy.enabled }}
+          {{- if .Values.proxy.httpProxy }}
+          - name: HTTP_PROXY
+            value: {{ .Values.proxy.httpProxy | quote }}
+          - name: http_proxy
+            value: {{ .Values.proxy.httpProxy | quote }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+          - name: HTTPS_PROXY
+            value: {{ .Values.proxy.httpsProxy | quote }}
+          - name: https_proxy
+            value: {{ .Values.proxy.httpsProxy | quote }}
+          {{- end }}
+          - name: NO_PROXY
+            value: {{ include "opencode-web.noProxy" . | quote }}
+          - name: no_proxy
+            value: {{ include "opencode-web.noProxy" . | quote }}
+          {{- end }}
+        {{- if .Values.livenessProbe }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.readinessProbe }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        {{- if .Values.persistence.enabled }}
+        volumeMounts:
+        - name: opencode-data
+          mountPath: {{ .Values.persistence.mountPath }}
+        {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+      - name: opencode-data
+        persistentVolumeClaim:
+          claimName: {{ include "opencode-web.fullname" . }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

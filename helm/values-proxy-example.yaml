@@ -1,0 +1,89 @@
+# Example values file for deploying with proxy configuration
+# Usage: helm install opencode-web ./helm -f values-proxy-example.yaml
+
+replicaCount: 1
+
+image:
+  repository: quay.io/marcocaimi/opencode-web-ocp
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+serviceAccount:
+  create: true
+  name: "opencode-sa"
+
+route:
+  enabled: true
+  hostname: "opencode.apps.example.com"
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+persistence:
+  enabled: true
+  storageClassName: "gp3-csi"
+  accessMode: ReadWriteOnce
+  size: 2Gi
+  mountPath: /tmp/opencode
+
+# Proxy Configuration
+proxy:
+  enabled: true
+  # Corporate proxy endpoints
+  httpProxy: "http://proxy.corp.example.com:8080"
+  httpsProxy: "http://proxy.corp.example.com:8080"
+
+  # Additional domains to exclude from proxy
+  # These are added to the default Kubernetes/OpenShift exclusions
+  additionalNoProxy:
+    - ".internal.corp"
+    - ".cluster.local"
+    - "registry.internal.corp"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+
+  # Kubernetes/OpenShift network configuration
+  # Adjust these to match your cluster's network settings
+  kubernetes:
+    serviceCIDR: "172.30.0.0/16"  # OpenShift default service network
+    podCIDR: "10.128.0.0/14"      # OpenShift default pod network
+    apiServer: "kubernetes.default.svc.cluster.local"
+
+env:
+  - name: OPENCODE_AUTOUPDATE
+    value: "true"
+  - name: SERVER_PASSWORD
+    value: "changeme"
+  - name: INFERENCE_ENDPOINT
+    value: "http://inference-service.ai-platform.svc.cluster.local:8080"
+  - name: MODEL_NAME
+    value: "qwen-coder"
+  - name: APIKEY
+    value: ""
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
