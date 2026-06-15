@@ -3,11 +3,12 @@
 set -e
 
 # config file
+WORKDIR=${WORKDIR:-"/workspace"}
 JSON_FILE=${CONFIG_FILE:-"/home/opencode/.config/opencode/opencode.json"}
 O_DISABLE_AUTOUPDATE=${OPENCODE_AUTOUPDATE:-true}
 O_SERVER_PASSWORD="${SERVER_PASSWORD:-redhat}"
 LLM_INFERENCE_ENDPOINT="${INFERENCE_ENDPOINT:-http://inference.apps.openshift.local}"
-DEPLOYED_MODEL_NAME="${MODEL_NAME:-qwen\-coder}"
+DEPLOYED_MODEL_NAME="${MODEL_NAME:-'qwen-coder'}"
 LLM_APIKEY="${APIKEY:-}"
 
 # Check if JSON_FILE is readable
@@ -54,4 +55,4 @@ export OPENCODE_DISABLE_AUTOUPDATE=${O_DISABLE_AUTOUPDATE}
 export OPENCODE_SERVER_PASSWORD=${O_SERVER_PASSWORD}
 export OPENSHIFT_LLM_INFERENCE_ENDPOINT="${LLM_INFERENCE_ENDPOINT}"
 export OPENSHIFT_AI_VLLM_API_KEY="${LLM_APIKEY}"
-opencode serve --hostname "${HOST}" --port "${PORT}" --cors="*"
+opencode serve --hostname "${HOST}" --port "${PORT}" --cors="*" $WORKDIR
