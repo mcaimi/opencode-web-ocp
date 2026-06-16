@@ -67,16 +67,25 @@ spec:
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
-        {{- if .Values.persistence.enabled }}
         volumeMounts:
+        {{- if .Values.persistence.enabled }}
         - name: opencode-data
           mountPath: {{ .Values.persistence.mountPath }}
         {{- end }}
-      {{- if .Values.persistence.enabled }}
+        {{- if .Values.openchamber.persistence.enabled }}
+        - name: openchamber-data
+          mountPath: {{ .Values.openchamber.persistence.mountPath }}
+        {{- end }}
       volumes:
+      {{- if .Values.persistence.enabled }}
       - name: opencode-data
         persistentVolumeClaim:
           claimName: {{ include "opencode-web.fullname" . }}
+      {{- end }}
+      {{- if .Values.openchamber.persistence.enabled }}
+      - name: openchamber-data
+        persistentVolumeClaim:
+          claimName: {{ include "opencode-web.fullname" . }}-openchamber
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

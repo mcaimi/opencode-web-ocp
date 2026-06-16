@@ -24,7 +24,15 @@ persistence:
   storageClassName: "gp3-csi"
   accessMode: ReadWriteOnce
   size: 2Gi
-  mountPath: /tmp/opencode
+  mountPath: /workspace
+
+openchamber:
+  persistence:
+    enabled: true
+    storageClassName: "gp3-csi"
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    mountPath: /home/opencode/.config/openchamber
 
 # Proxy Configuration
 proxy:
@@ -55,6 +63,8 @@ env:
     value: "true"
   - name: SERVER_PASSWORD
     value: "changeme"
+  - name: API_ONLY
+    value: "0"
   - name: INFERENCE_ENDPOINT
     value: "http://inference-service.ai-platform.svc.cluster.local:8080"
   - name: MODEL_NAME

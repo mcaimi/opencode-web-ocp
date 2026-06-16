@@ -34,6 +34,14 @@ persistence:
   size: 1Gi
   mountPath: /workspace
 
+openchamber:
+  persistence:
+    enabled: false
+    storageClassName: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    mountPath: /home/opencode/.config/openchamber
+
 resources:
   limits:
     cpu: 1000m
@@ -47,6 +55,8 @@ env:
     value: "true"
   - name: SERVER_PASSWORD
     value: "redhat"
+  - name: API_ONLY
+    value: "0"
   - name: INFERENCE_ENDPOINT
     value: "http://inference.apps.openshift.local"
   - name: MODEL_NAME

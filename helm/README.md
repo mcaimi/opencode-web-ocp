@@ -1,6 +1,14 @@
 # Opencode Web Helm Chart
 
-This Helm chart deploys the Opencode Web application on OpenShift.
+This Helm chart deploys the Opencode Web application with OpenChamber on OpenShift.
+
+## What's New in v0.2.0
+
+- **OpenChamber Integration**: The application now runs with OpenChamber, providing an enhanced web interface for OpenCode
+- **Ripgrep Support**: Added ripgrep for improved code search capabilities
+- **Node.js Runtime**: Included Node.js runtime for enhanced functionality
+- **Separate Data Storage**: Optional persistent volume for OpenChamber configuration and data
+- **API-Only Mode**: New `API_ONLY` environment variable to run in API-only mode
 
 ## Prerequisites
 
@@ -66,10 +74,14 @@ helm install opencode-web ./helm -f custom-values.yaml
 | `route.enabled` | Enable OpenShift Route | `true` |
 | `route.hostname` | Route hostname (optional) | `""` |
 | `route.tls.termination` | TLS termination type | `edge` |
-| `persistence.enabled` | Enable persistent storage | `false` |
-| `persistence.size` | PVC size | `1Gi` |
-| `persistence.storageClassName` | Storage class name | `""` |
-| `persistence.mountPath` | Mount path in container | `/tmp/opencode` |
+| `persistence.enabled` | Enable persistent storage for workspace | `false` |
+| `persistence.size` | PVC size for workspace | `1Gi` |
+| `persistence.storageClassName` | Storage class name for workspace | `""` |
+| `persistence.mountPath` | Mount path in container | `/workspace` |
+| `openchamber.persistence.enabled` | Enable persistent storage for OpenChamber data | `false` |
+| `openchamber.persistence.size` | PVC size for OpenChamber data | `1Gi` |
+| `openchamber.persistence.storageClassName` | Storage class name for OpenChamber | `""` |
+| `openchamber.persistence.mountPath` | OpenChamber data mount path | `/home/opencode/.config/openchamber` |
 | `proxy.enabled` | Enable proxy configuration | `false` |
 | `proxy.httpProxy` | HTTP proxy URL | `""` |
 | `proxy.httpsProxy` | HTTPS proxy URL | `""` |
@@ -80,10 +92,12 @@ helm install opencode-web ./helm -f custom-values.yaml
 
 The following environment variables can be customized via `env` array in values.yaml:
 
-- `OPENCODE_DISABLE_AUTOUPDATE`: Disable automatic updates (default: `true`)
-- `OPENCODE_SERVER_PASSWORD`: Web UI password (default: `redhat`)
-- `OPENSHIFT_LLM_INFERENCE_ENDPOINT`: LLM inference endpoint URL
-- `OPENSHIFT_DEPLOYED_MODEL_NAME`: Model name to use (default: `qwen-coder`)
+- `OPENCODE_AUTOUPDATE`: Enable/disable automatic updates (default: `true`)
+- `SERVER_PASSWORD`: Web UI password for OpenChamber (default: `redhat`)
+- `API_ONLY`: Run OpenChamber in API-only mode, no UI (default: `0`)
+- `INFERENCE_ENDPOINT`: LLM inference endpoint URL (default: `http://inference.apps.openshift.local`)
+- `MODEL_NAME`: Model name to use (default: `qwen-coder`)
+- `APIKEY`: API key for LLM inference endpoint (default: `""`)
 
 ### Proxy Configuration
 
@@ -154,14 +168,37 @@ The chart creates a dedicated service account (`opencode-sa`) for enhanced secur
 
 ### Persistent Storage (Optional)
 
-When enabled, a PersistentVolumeClaim is created and mounted at `/tmp/opencode` for persistent data storage.
+The chart supports two types of persistent storage:
 
-Enable persistence:
+1. **Workspace Storage** (`/workspace`): For user project files and code
+2. **OpenChamber Data Storage** (`/home/opencode/.config/openchamber`): For OpenChamber configuration and session data
+
+Enable workspace persistence:
 
 ```bash
 helm install opencode-web ./helm \
   --set persistence.enabled=true \
   --set persistence.size=2Gi \
+  --set persistence.storageClassName=gp2
+```
+
+Enable OpenChamber data persistence (recommended for production):
+
+```bash
+helm install opencode-web ./helm \
+  --set openchamber.persistence.enabled=true \
+  --set openchamber.persistence.size=1Gi \
+  --set openchamber.persistence.storageClassName=gp2
+```
+
+Enable both:
+
+```bash
+helm install opencode-web ./helm \
+  --set persistence.enabled=true \
+  --set persistence.size=5Gi \
+  --set openchamber.persistence.enabled=true \
+  --set openchamber.persistence.size=2Gi \
   --set persistence.storageClassName=gp2
 ```
 
@@ -195,7 +232,11 @@ helm uninstall opencode-web
 Note: PersistentVolumeClaims are not automatically deleted and must be removed manually if needed:
 
 ```bash
+# Delete workspace PVC
 oc delete pvc opencode-web
+
+# Delete OpenChamber data PVC (if enabled)
+oc delete pvc opencode-web-openchamber
 ```
 
 ## Accessing the Application

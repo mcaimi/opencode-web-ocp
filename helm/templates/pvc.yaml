@@ -15,3 +15,22 @@ spec:
   storageClassName: {{ .Values.persistence.storageClassName }}
   {{- end }}
 {{- end }}
+---
+{{- if .Values.openchamber.persistence.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "opencode-web.fullname" . }}-openchamber
+  labels:
+    {{- include "opencode-web.labels" . | nindent 4 }}
+    app.kubernetes.io/component: openchamber
+spec:
+  accessModes:
+    - {{ .Values.openchamber.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.openchamber.persistence.size }}
+  {{- if .Values.openchamber.persistence.storageClassName }}
+  storageClassName: {{ .Values.openchamber.persistence.storageClassName }}
+  {{- end }}
+{{- end }}
