@@ -5,6 +5,7 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
 ARG OPENCODE_VERSION=1.17.4
+ARG RIPGREP_VERSION=15.1.0
 ARG TARGETARCH
 
 RUN microdnf upgrade -y && microdnf install -y \
@@ -17,17 +18,24 @@ RUN microdnf upgrade -y && microdnf install -y \
 RUN set -eux; \
   arch="${TARGETARCH:-$(uname -m)}"; \
   case "$arch" in \
-  amd64|x86_64) opencode_asset="opencode-linux-x64.tar.gz" ;; \
-  arm64|aarch64) opencode_asset="opencode-linux-arm64.tar.gz" ;; \
-  *) echo "Unsupported architecture: $arch" >&2; exit 1 ;; \
+    amd64|x86_64) opencode_asset="opencode-linux-x64.tar.gz"; ripgrep_asset="x86_64-unknown-linux-musl" ;; \
+    arm64|aarch64) opencode_asset="opencode-linux-arm64.tar.gz"; ripgrep_asset="aarch64-unknown-linux-gnu" ;; \
+    *) echo "Unsupported architecture: $arch" >&2; exit 1 ;; \
   esac; \
   curl -fsSL \
-  -o /tmp/opencode.tar.gz \
-  "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/${opencode_asset}"; \
+    -o /tmp/opencode.tar.gz \
+    "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/${opencode_asset}"; \
+  curl -fsSL \
+    -o /tmp/ripgrep.tar.gz \
+    "https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/ripgrep-${RIPGREP_VERSION}-${ripgrep_asset}.tar.gz"; \
   mkdir -p /opt/opencode; \
+  mkdir -p /opt/ripgrep; \
   tar -xzf /tmp/opencode.tar.gz -C /opt/opencode; \
+  tar -xzf /tmp/ripgrep.tar.gz -C /opt/ripgrep --strip-components=1; \
   chmod 0755 /opt/opencode/opencode; \
-  /opt/opencode/opencode --version;
+  chmod 0755 /opt/ripgrep/rg; \
+  /opt/opencode/opencode --version; \
+  /opt/ripgrep/rg --version;
 
 # skill downloader
 FROM ${UBI_IMAGE} AS skill-download
@@ -52,6 +60,7 @@ RUN microdnf upgrade -y && microdnf install -y \
   jq \
   iproute \
   hostname \
+  nodejs \
   && microdnf clean all \
   && rm -rf /var/cache/dnf /var/cache/yum
 
@@ -60,9 +69,13 @@ RUN useradd --system --create-home --home-dir /home/opencode --gid 0 --shell /bi
 
 # Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
+COPY --from=opencode-download /opt/ripgrep/rg /usr/local/bin/rg
 COPY --from=skill-download /opt/skills/skills/code-security /home/opencode/.config/opencode/skills/code-security
 COPY scripts/entry.sh /usr/local/bin/entrypoint
 COPY config/opencode.json /home/opencode/.config/opencode/opencode.json
+
+# install openchamber
+RUN set -eux; curl -fsSL https://raw.githubusercontent.com/btriapitsyn/openchamber/main/scripts/install.sh | bash
 
 # Upload custom subagents
 COPY agents/git-summary.md /home/opencode/.config/opencode/agents/git-summary.md

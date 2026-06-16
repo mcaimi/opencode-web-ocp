@@ -7,6 +7,7 @@ WORKDIR=${WORKDIR:-"/workspace"}
 JSON_FILE=${CONFIG_FILE:-"/home/opencode/.config/opencode/opencode.json"}
 O_DISABLE_AUTOUPDATE=${OPENCODE_AUTOUPDATE:-true}
 O_SERVER_PASSWORD="${SERVER_PASSWORD:-redhat}"
+O_API_ONLY="${API_ONLY:-0}"
 LLM_INFERENCE_ENDPOINT="${INFERENCE_ENDPOINT:-http://inference.apps.openshift.local}"
 DEPLOYED_MODEL_NAME="${MODEL_NAME:-'qwen-coder'}"
 LLM_APIKEY="${APIKEY:-}"
@@ -22,7 +23,9 @@ DEFAULT_MODEL=$(jq -r '.provider.openshift.models | keys[0]' "$JSON_FILE")
 
 # create local config dir
 CUSTOM_CONFIG_DIR="/home/opencode/.config/opencode"
+O_DATA_DIR="/home/opencode/.config/openchamber"
 mkdir -p "$CUSTOM_CONFIG_DIR"
+mkdir -p "${O_DATA_DIR}"
 
 # Substitute model name key
 TMPFILE=$(mktemp $CUSTOM_CONFIG_DIR/opencode.XXXXXX)
@@ -55,4 +58,11 @@ export OPENCODE_DISABLE_AUTOUPDATE=${O_DISABLE_AUTOUPDATE}
 export OPENCODE_SERVER_PASSWORD=${O_SERVER_PASSWORD}
 export OPENSHIFT_LLM_INFERENCE_ENDPOINT="${LLM_INFERENCE_ENDPOINT}"
 export OPENSHIFT_AI_VLLM_API_KEY="${LLM_APIKEY}"
-opencode serve --hostname "${HOST}" --port "${PORT}" --cors="*" $WORKDIR
+export OPENCHAMBER_UI_PASSWORD=${OPENCODE_SERVER_PASSWORD}
+export OPENCHAMBER_HOST="${HOST}"
+export OPENCHAMBER_API_ONLY="${O_API_ONLY}"
+export OPENCHAMBER_DATA_DIR="${O_DATA_DIR}"
+
+# startup openchamber/opencode
+# opencode serve --hostname "${HOST}" --port "${PORT}" --cors="*" $WORKDIR
+openchamber serve --foreground --port ${PORT} --host ${HOST} --ui-password ${OPENCHAMBER_UI_PASSWORD}
