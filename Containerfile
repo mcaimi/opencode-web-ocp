@@ -4,7 +4,7 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
-ARG OPENCODE_VERSION=1.17.4
+ARG OPENCODE_VERSION=1.17.12
 ARG RIPGREP_VERSION=15.1.0
 ARG TARGETARCH
 
