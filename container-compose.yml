@@ -1,0 +1,35 @@
+---
+version: '3.8'
+
+services:
+  # OpenChamber AI Assistant
+  agent:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: openchamber
+    ports:
+      - "8088:8080"      # REST API
+    volumes:
+      - openchamber-workspace:/workspace
+    environment:
+      - MODEL_NAME=<MODEL_PLACEHOLDER>
+      - INFERENCE_ENDPOINT=<INFERENCE_ENDPOINT>
+      - APIKEY=<APIKEY_PLACEHOLDER>
+    restart: unless-stopped
+    networks:
+      - openchamber-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://openchamber:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  openchamber-workspace:
+    driver: local
+
+networks:
+  openchamber-network:
+    driver: bridge
