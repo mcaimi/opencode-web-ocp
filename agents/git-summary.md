@@ -57,6 +57,8 @@ When asked to write commit messages, the agent compiles a detailed but concise w
 
 ## Output Format
 
+The agent always produces a report of all findings in Markdown format for the user.
+
 ### Markdown Format (Default)
 
 ```markdown
