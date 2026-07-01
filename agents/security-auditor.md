@@ -8,7 +8,6 @@ tools:
   bash: true
   webfetch: true
 permission:
-  edit: "ask"
   bash: 
     "*": "ask"
     "git status": "allow"
