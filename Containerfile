@@ -4,8 +4,8 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
-ARG OPENCODE_VERSION=1.17.12
-ARG RIPGREP_VERSION=15.1.0
+ARG OPENCODE_VERSION=1.18.7
+ARG RIPGREP_VERSION=15.2.0
 ARG TARGETARCH
 
 RUN microdnf upgrade -y && microdnf install -y \
@@ -18,16 +18,16 @@ RUN microdnf upgrade -y && microdnf install -y \
 RUN set -eux; \
   arch="${TARGETARCH:-$(uname -m)}"; \
   case "$arch" in \
-    amd64|x86_64) opencode_asset="opencode-linux-x64.tar.gz"; ripgrep_asset="x86_64-unknown-linux-musl" ;; \
-    arm64|aarch64) opencode_asset="opencode-linux-arm64.tar.gz"; ripgrep_asset="aarch64-unknown-linux-gnu" ;; \
-    *) echo "Unsupported architecture: $arch" >&2; exit 1 ;; \
+  amd64|x86_64) opencode_asset="opencode-linux-x64.tar.gz"; ripgrep_asset="x86_64-unknown-linux-musl" ;; \
+  arm64|aarch64) opencode_asset="opencode-linux-arm64.tar.gz"; ripgrep_asset="aarch64-unknown-linux-gnu" ;; \
+  *) echo "Unsupported architecture: $arch" >&2; exit 1 ;; \
   esac; \
   curl -fsSL \
-    -o /tmp/opencode.tar.gz \
-    "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/${opencode_asset}"; \
+  -o /tmp/opencode.tar.gz \
+  "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/${opencode_asset}"; \
   curl -fsSL \
-    -o /tmp/ripgrep.tar.gz \
-    "https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/ripgrep-${RIPGREP_VERSION}-${ripgrep_asset}.tar.gz"; \
+  -o /tmp/ripgrep.tar.gz \
+  "https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/ripgrep-${RIPGREP_VERSION}-${ripgrep_asset}.tar.gz"; \
   mkdir -p /opt/opencode; \
   mkdir -p /opt/ripgrep; \
   tar -xzf /tmp/opencode.tar.gz -C /opt/opencode; \
