@@ -4,7 +4,7 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
-ARG OPENCODE_VERSION=1.18.8
+ARG OPENCODE_VERSION=1.18.18
 ARG RIPGREP_VERSION=15.2.0
 ARG TARGETARCH
 
@@ -41,7 +41,7 @@ RUN set -eux; \
 FROM ${UBI_IMAGE} AS skill-download
 ARG SKILL_REPO=https://github.com/semgrep/skills
 
-RUN microdnf upgrade -y && microdnf install -y git
+RUN microdnf upgrade -y && microdnf install -y git && microdnf clean all
 
 RUN set -eux; \
   mkdir -p /opt/skills; \
@@ -75,7 +75,7 @@ COPY scripts/entry.sh /usr/local/bin/entrypoint
 COPY config/opencode.json /home/opencode/.config/opencode/opencode.json
 
 # install openchamber
-RUN set -eux; curl -fsSL https://raw.githubusercontent.com/btriapitsyn/openchamber/main/scripts/install.sh | bash
+RUN set -eux -o pipefail; curl -fsSL https://raw.githubusercontent.com/btriapitsyn/openchamber/main/scripts/install.sh | bash
 
 # Upload custom subagents
 COPY agents/git-summary.md /home/opencode/.config/opencode/agents/git-summary.md
