@@ -4,7 +4,7 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
-ARG OPENCODE_VERSION=1.18.2
+ARG OPENCODE_VERSION=1.18.18
 ARG TARGETARCH
 
 RUN microdnf upgrade -y && microdnf install -y \
@@ -33,7 +33,7 @@ RUN set -eux; \
 FROM ${UBI_IMAGE} AS skill-download
 ARG SKILL_REPO=https://github.com/semgrep/skills
 
-RUN microdnf upgrade -y && microdnf install -y git
+RUN microdnf upgrade -y && microdnf install -y git && microdnf clean all
 
 RUN set -eux; \
   mkdir -p /opt/skills; \
