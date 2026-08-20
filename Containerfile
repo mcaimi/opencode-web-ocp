@@ -4,7 +4,6 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
-ARG OPENCODE_VERSION=1.18.18
 ARG TARGETARCH
 
 RUN microdnf upgrade -y && microdnf install -y \
@@ -23,7 +22,7 @@ RUN set -eux; \
   esac; \
   curl -fsSL \
   -o /tmp/opencode.tar.gz \
-  "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/${opencode_asset}"; \
+  "https://github.com/anomalyco/opencode/releases/latest/download/${opencode_asset}"; \
   mkdir -p /opt/opencode; \
   tar -xzf /tmp/opencode.tar.gz -C /opt/opencode; \
   chmod 0755 /opt/opencode/opencode; \
@@ -31,13 +30,16 @@ RUN set -eux; \
 
 # skill downloader
 FROM ${UBI_IMAGE} AS skill-download
-ARG SKILL_REPO=https://github.com/semgrep/skills
+ARG SEMGREP_SKILL_REPO=https://github.com/semgrep/skills
+ARG MCAIMI_SKILL_REPO=https://github.com/mcaimi/opencode-skills
 
 RUN microdnf upgrade -y && microdnf install -y git && microdnf clean all
 
 RUN set -eux; \
-  mkdir -p /opt/skills; \
-  git clone ${SKILL_REPO} /opt/skills && chgrp -R 0 /opt/skills && chmod -R g=u /opt/skills
+  mkdir -p /opt/semgrep-skills; \
+  git clone ${SEMGREP_SKILL_REPO} /opt/semgrep-skills && chgrp -R 0 /opt/semgrep-skills && chmod -R g=u /opt/semgrep-skills; \
+  mkdir -p /opt/mcaimi-skill; \
+  git clone ${MCAIMI_SKILL_REPO} /opt/mcaimi-skills && chgrp -R 0 /opt/mcaimi-skills && chmod -R g=u /opt/mcaimi-skills
 
 # Runtime Image
 FROM ${UBI_IMAGE}
@@ -60,13 +62,18 @@ RUN useradd --system --create-home --home-dir /home/opencode --gid 0 --shell /bi
 
 # Copy binaries and config files
 COPY --from=opencode-download /opt/opencode/opencode /usr/local/bin/opencode
-COPY --from=skill-download /opt/skills/skills/code-security /home/opencode/.config/opencode/skills/code-security
+COPY --from=skill-download /opt/semgrep-skills/skills/code-security /home/opencode/.config/opencode/skills/code-security
+COPY --from=skill-download /opt/mcaimi-skills/git-summary /home/opencode/.config/opencode/skills/git-summary
+COPY --from=skill-download /opt/mcaimi-skills/security-auditor /home/opencode/.config/opencode/skills/security-auditor
+COPY --from=skill-download /opt/mcaimi-skills/wikipedia /home/opencode/.config/opencode/skills/wikipedia
 COPY scripts/entry.sh /usr/local/bin/entrypoint
 COPY config/opencode.json /home/opencode/.config/opencode/opencode.json
+COPY config/tui.json /home/opencode/.config/opencode/tui.json
 
 # Upload custom subagents
-COPY agents/git-summary.md /home/opencode/.config/opencode/agents/git-summary.md
-COPY agents/security-auditor.md /home/opencode/.config/opencode/agents/security-auditor.md
+COPY agents/deep-security-auditor.md /home/opencode/.config/opencode/agents/deep-security-auditor.md
+COPY agents/git-repo-analyst.md /home/opencode/.config/opencode/agents/git-repo-analyst.md
+COPY agents/wikipedia-researcher.md /home/opencode/.config/opencode/agents/wikipedia-researcher.md
 
 # fix permissions
 RUN chown -Rv opencode:0 /home/opencode /workspace \
