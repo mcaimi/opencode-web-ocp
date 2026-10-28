@@ -70,7 +70,7 @@ COPY --from=skill-download /opt/mcaimi-skills/security-auditor /home/opencode/.c
 COPY --from=skill-download /opt/mcaimi-skills/wikipedia /home/opencode/.config/opencode/skills/wikipedia
 COPY --from=skill-download /opt/mcaimi-skills/memory-cube /home/opencode/.config/opencode/skills/memory-cube
 COPY --from=skill-download /opt/mcaimi-skills/port-scanner /home/opencode/.config/opencode/skills/port-scanner
-COPY --from=skill-download /opt/mcaimi-skills/reverse-engineer /home/opencode/.config/opencode/skills/reverse-engineer
+COPY --from=skill-download /opt/mcaimi-skills/reverse-engineering /home/opencode/.config/opencode/skills/reverse-engineering
 COPY scripts/entry.sh /usr/local/bin/entrypoint
 COPY config/opencode.json /home/opencode/.config/opencode/opencode.json
 COPY config/cli.json /home/opencode/.config/opencode/cli.json
