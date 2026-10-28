@@ -60,6 +60,13 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Name of the secret holding SERVER_PASSWORD and APIKEY
+*/}}
+{{- define "opencode-web.secretName" -}}
+{{- default (include "opencode-web.fullname" .) .Values.auth.existingSecret }}
+{{- end }}
+
+{{/*
 Generate NO_PROXY environment variable value
 Includes standard Kubernetes/OpenShift exclusions plus custom domains
 */}}
@@ -70,6 +77,7 @@ Includes standard Kubernetes/OpenShift exclusions plus custom domains
 {{- $noProxy := list -}}
 {{- $noProxy = append $noProxy "localhost" -}}
 {{- $noProxy = append $noProxy "127.0.0.1" -}}
+{{- $noProxy = append $noProxy "::1" -}}
 {{- $noProxy = append $noProxy ".local" -}}
 {{- $noProxy = append $noProxy ".svc" -}}
 {{- $noProxy = append $noProxy ".svc.cluster.local" -}}

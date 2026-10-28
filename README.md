@@ -2,7 +2,7 @@
 
 [![Docker Repository on Quay](https://quay.io/repository/marcocaimi/opencode-web-ocp/status "Docker Repository on Quay")](https://quay.io/repository/marcocaimi/opencode-web-ocp)
 
-Deploy [opencode web](https://github.com/anomalyco/opencode) as a containerized web service on OpenShift via [openchamber](https://github.com/btriapitsyn/openchamber).
+Deploy [opencode web](https://github.com/anomalyco/opencode) as a containerized web service on OpenShift via [openchamber](https://github.com/openchamber/openchamber).
 
 `opencode` is an AI-powered IDE-like terminal interface. `openchamber` is a lightweight server wrapper that provides multi-session support and improved stability. This project wraps both for OpenShift deployment, connecting to an OpenShift-hosted LLM inference endpoint.
 
@@ -10,15 +10,17 @@ Deploy [opencode web](https://github.com/anomalyco/opencode) as a containerized 
 
 | File/Directory | Purpose |
 |---|---|
-| `Containerfile` | Multi-stage image build — downloads opencode binary (v1.17.4), ripgrep (v15.1.0), and installs openchamber for multiple architectures, packages into UBI minimal. Installs Node.js runtime. Downloads the code-security skill from GitHub. Home dir is `/home/opencode`. User runs as `opencode` (uid arbitrary, gid 0 for OpenShift compatibility) |
-| `scripts/entry.sh` | Entrypoint script (installed as `/usr/local/bin/entrypoint`) — substitutes env vars into the opencode config, displays proxy settings, then launches `openchamber serve` (which wraps opencode for multi-session support) |
-| `config/opencode.json` | OpenCode config (points to OpenShift LLM via `@ai-sdk/openai-compatible` adapter), placed in `/home/opencode/.config/opencode/` |
-| `agents/` | Custom opencode subagents (`git-summary.md`, `security-auditor.md`) placed in `/home/opencode/.config/opencode/agents/` |
+| `Containerfile.openchamber` | Multi-stage image build — downloads the pinned opencode v2 binary (`OPENCODE_VERSION`, default 2.2.0, checksum-verified) and ripgrep (`RIPGREP_VERSION`, default 15.2.0) for multiple architectures, installs Node.js 24 and `@openchamber/web` (`OPENCHAMBER_VERSION`, default 2.5.2) via npm, packages into UBI minimal. Downloads skills from GitHub. Home dir is `/home/opencode`. User runs as `opencode` (uid arbitrary, gid 0 for OpenShift compatibility) |
+| `scripts/entry.sh` | Entrypoint script (installed as `/usr/local/bin/entrypoint`) — substitutes env vars into the opencode config, displays proxy settings, then launches `openchamber serve` (which spawns and manages `opencode serve` for multi-session support) |
+| `config/opencode.json` | OpenCode v2 config (`providers.openshift` points to the OpenShift LLM via the `aisdk:@ai-sdk/openai-compatible` package), placed in `/home/opencode/.config/opencode/` |
+| `config/cli.json` | OpenCode v2 CLI/TUI settings (theme), replaces the v1 `tui.json` |
+| `agents/` | Custom opencode subagents (`deep-security-auditor.md`, `git-repo-analyst.md`, `wikipedia-researcher.md`) placed in `/home/opencode/.config/opencode/agents/` |
+| `container-compose.yml` | Local test setup with podman/docker compose |
 | `helm/` | Helm chart for OpenShift deployment with proxy support, persistent storage, and edge-terminated routes |
 
 ## How runtime config works
 
-At container start, `entry.sh` uses `jq` to replace the placeholder key `OPENSHIFT_DEPLOYED_MODEL_NAME` in `opencode.json` with the value of the `MODEL_NAME` env var.
+At container start, `entry.sh` uses `jq` to rename the (first) model key under `providers.openshift.models` — initially the placeholder `OPENSHIFT_DEPLOYED_MODEL_NAME` — to the value of the `MODEL_NAME` env var, sets the default `model` to `openshift/$MODEL_NAME` and sets `update` from `OPENCODE_AUTOUPDATE`. Because it always renames the current key, restarting with a different `MODEL_NAME` works.
 
 **Never edit `opencode.json` directly.** The placeholder is substituted at runtime from environment variables.
 
@@ -27,7 +29,12 @@ At container start, `entry.sh` uses `jq` to replace the placeholder key `OPENSHI
 Build the container image:
 
 ```bash
-podman build -t opencode-web-ocp -f Containerfile .
+podman build -t opencode-web-ocp -f Containerfile.openchamber .
+
+# override pinned versions
+podman build -t opencode-web-ocp -f Containerfile.openchamber \
+  --build-arg OPENCODE_VERSION=2.2.0 \
+  --build-arg OPENCHAMBER_VERSION=2.5.2 .
 ```
 
 ## Run
@@ -62,7 +69,7 @@ oc create route edge --service=opencode-web-ocp --insecure-policy=Redirect
 
 #### One-liner deploy
 
-Builds from the local Containerfile, injects env vars, and creates the route:
+Imports the published image, injects env vars, and creates the route:
 
 ```bash
 INFERENCE_URL=$(oc get inferenceservice qwen3-coder -o jsonpath="{.status.url}") && \
@@ -83,15 +90,18 @@ oc new-app -i opencode-web-ocp --name=opencode-web-ocp \
 | `INFERENCE_ENDPOINT` | `http://inference.apps.openshift.local` | LLM API base URL |
 | `MODEL_NAME` | `qwen-coder` | Model name to use in `opencode.json` |
 | `SERVER_PASSWORD` | `redhat` | OpenCode/OpenChamber web UI password (maps to `OPENCHAMBER_UI_PASSWORD`) |
-| `OPENCODE_AUTOUPDATE` | `true` | Enable/disable auto-update |
-| `API_ONLY` | `0` | Set to `1` to run openchamber in API-only mode (no web UI) |
+| `OPENCODE_AUTOUPDATE` | `false` | Enable auto-update (`true`/`1`); sets `update` in `opencode.json` and `OPENCODE_DISABLE_AUTOUPDATE` |
+| `API_ONLY` | `0` | Set to `1` to run openchamber in API-only mode (`--api-only`, no web UI) |
 | `APIKEY` | (empty) | OpenShift vLLM API key (maps to `OPENSHIFT_AI_VLLM_API_KEY`) |
-| `CONFIG_FILE` | `/home/opencode/.config/opencode/opencode.json` | Path to opencode config file |
+| `CONFIG_FILE` | `/home/opencode/.config/opencode/opencode.json` | Path to opencode config file (exported as `OPENCODE_CONFIG` when set) |
+| `WORKDIR` | `/workspace` | Working directory openchamber is started from |
+| `OPENCODE_DB` | `/home/opencode/.local/share/opencode/opencode.db` | opencode v2 state database (sessions, provider credentials) |
+| `OPENCHAMBER_DATA_DIR` | `/home/opencode/.config/openchamber` | openchamber data directory |
 | `HOST` | local IP / `localhost` | Bind address (auto-resolved from `hostname -i`) |
 | `PORT` | `8080` | Listen port |
 | `HTTP_PROXY` | (unset) | HTTP proxy URL (displayed at startup) |
 | `HTTPS_PROXY` | (unset) | HTTPS proxy URL (displayed at startup) |
-| `NO_PROXY` | (unset) | Comma-separated list of domains to exclude from proxy |
+| `NO_PROXY` | (unset) | Comma-separated list of domains to exclude from proxy (`localhost,127.0.0.1,::1` is always appended) |
 
 ## Helm Chart Deployment
 
@@ -102,7 +112,9 @@ A complete Helm chart is available in the `helm/` directory with support for:
 - Edge-terminated OpenShift Route with customizable hostname
 - **HTTP/HTTPS proxy support** with automatic Kubernetes/OpenShift NO_PROXY exclusions
 - Configurable resources, replicas, health checks
-- API key support via `APIKEY` env var
+- `SERVER_PASSWORD` / `APIKEY` injected from a Secret (`auth.*` values or `auth.existingSecret`)
+- Optional PersistentVolumeClaims for openchamber data and opencode state (`opencode.db`)
+- Probes on the unauthenticated openchamber `/health` endpoint
 
 See [helm/README.md](helm/README.md) for installation instructions and [helm/PROXY-EXAMPLES.md](helm/PROXY-EXAMPLES.md) for proxy configuration scenarios.
 
@@ -120,8 +132,8 @@ helm install opencode-web ./helm \
   --set env[0].value=http://your-inference-endpoint \
   --set env[1].name=MODEL_NAME \
   --set env[1].value=qwen-coder \
-  --set env[2].name=APIKEY \
-  --set env[2].value=your-api-key
+  --set auth.serverPassword=yourpassword \
+  --set auth.apiKey=your-api-key
 
 # With proxy support
 helm install opencode-web ./helm \
@@ -139,6 +151,9 @@ helm install opencode-web ./helm \
 - Custom subagents in `agents/` directory are automatically placed in `/home/opencode/.config/opencode/agents/`
 - No additional packages can be installed at runtime (runs as non-root)
 - The `code-security` skill is pre-installed from the semgrep/skills repo at image build time
-- `openchamber` wraps opencode to provide multi-session support and improved stability — server runs as `openchamber serve` instead of `opencode serve`
+- `openchamber` 2.x requires the opencode v2 server (>= 2.1.0) and Node.js >= 24.14; it spawns `opencode serve` on `127.0.0.1` itself and generates the internal opencode password
+- `GET /health` on port 8080 is unauthenticated and used for health checks
+- opencode v2 stores provider credentials in `opencode.db`; a legacy `auth.json` is only imported once, so pass the inference key via `APIKEY`
+- opencode v2 no longer runs language servers (`lsp`), and `tui.json` has been replaced by `cli.json`
 - `ripgrep` (`rg`) is included for fast code search capabilities
-- Node.js runtime is included for openchamber and skill dependencies
+- Node.js 24 runtime is included for openchamber and skill dependencies

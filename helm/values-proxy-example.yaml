@@ -34,6 +34,24 @@ openchamber:
     size: 1Gi
     mountPath: /home/opencode/.config/openchamber
 
+# opencode state: opencode.db (sessions, provider credentials) and logs
+opencode:
+  persistence:
+    enabled: true
+    storageClassName: "gp3-csi"
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    mountPath: /home/opencode/.local/share/opencode
+
+# SERVER_PASSWORD (UI password) and APIKEY (vLLM API key) are read from a Secret.
+# Set existingSecret to use a pre-created one, otherwise the chart creates it from the values below.
+auth:
+  existingSecret: ""
+  serverPasswordKey: server-password
+  apiKeyKey: api-key
+  serverPassword: "changeme"
+  apiKey: ""
+
 # Proxy Configuration
 proxy:
   enabled: true
@@ -59,18 +77,15 @@ proxy:
     apiServer: "kubernetes.default.svc.cluster.local"
 
 env:
+  # the container runs unprivileged and cannot update binaries in place
   - name: OPENCODE_AUTOUPDATE
-    value: "true"
-  - name: SERVER_PASSWORD
-    value: "changeme"
+    value: "false"
   - name: API_ONLY
     value: "0"
   - name: INFERENCE_ENDPOINT
     value: "http://inference-service.ai-platform.svc.cluster.local:8080"
   - name: MODEL_NAME
     value: "qwen-coder"
-  - name: APIKEY
-    value: ""
 
 resources:
   limits:
@@ -82,7 +97,7 @@ resources:
 
 livenessProbe:
   httpGet:
-    path: /
+    path: /health
     port: 8080
   initialDelaySeconds: 30
   periodSeconds: 10
@@ -91,7 +106,7 @@ livenessProbe:
 
 readinessProbe:
   httpGet:
-    path: /
+    path: /health
     port: 8080
   initialDelaySeconds: 10
   periodSeconds: 5
