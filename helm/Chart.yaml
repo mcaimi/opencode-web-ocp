@@ -2,8 +2,8 @@ apiVersion: v2
 name: opencode-web
 description: A Helm chart for deploying Opencode Web on OpenShift
 type: application
-version: 0.1.0
-appVersion: "1.17.4"
+version: 0.2.0
+appVersion: "2.2.0"
 maintainers:
   - name: Marco Caimi
 keywords:

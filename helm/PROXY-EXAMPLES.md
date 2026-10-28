@@ -208,14 +208,14 @@ proxy:
     - "192.168.0.0/16"
 
 env:
-  - name: OPENCODE_SERVER_PASSWORD
+  - name: SERVER_PASSWORD
     valueFrom:
       secretKeyRef:
         name: opencode-credentials
         key: password
-  - name: OPENSHIFT_LLM_INFERENCE_ENDPOINT
+  - name: INFERENCE_ENDPOINT
     value: "http://inference-service.ai-platform.svc.cluster.local:8080"
-  - name: OPENSHIFT_DEPLOYED_MODEL_NAME
+  - name: MODEL_NAME
     value: "qwen-coder"
 
 resources:

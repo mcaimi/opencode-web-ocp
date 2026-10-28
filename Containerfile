@@ -5,6 +5,8 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 # Opencode Builder
 FROM ${UBI_IMAGE} AS opencode-download
 ARG TARGETARCH
+# pinned: releases/latest still tracks the v1 line
+ARG OPENCODE_VERSION=2.2.0
 
 RUN microdnf upgrade -y && microdnf install -y \
   curl \
@@ -22,7 +24,7 @@ RUN set -eux; \
   esac; \
   curl -fsSL \
   -o /tmp/opencode.tar.gz \
-  "https://github.com/anomalyco/opencode/releases/latest/download/${opencode_asset}"; \
+  "https://github.com/anomalyco/opencode/releases/download/v${OPENCODE_VERSION}/${opencode_asset}"; \
   mkdir -p /opt/opencode; \
   tar -xzf /tmp/opencode.tar.gz -C /opt/opencode; \
   chmod 0755 /opt/opencode/opencode; \
@@ -38,7 +40,7 @@ RUN microdnf upgrade -y && microdnf install -y git && microdnf clean all
 RUN set -eux; \
   mkdir -p /opt/semgrep-skills; \
   git clone ${SEMGREP_SKILL_REPO} /opt/semgrep-skills && chgrp -R 0 /opt/semgrep-skills && chmod -R g=u /opt/semgrep-skills; \
-  mkdir -p /opt/mcaimi-skill; \
+  mkdir -p /opt/mcaimi-skills; \
   git clone ${MCAIMI_SKILL_REPO} /opt/mcaimi-skills && chgrp -R 0 /opt/mcaimi-skills && chmod -R g=u /opt/mcaimi-skills
 
 # Runtime Image
@@ -66,9 +68,12 @@ COPY --from=skill-download /opt/semgrep-skills/skills/code-security /home/openco
 COPY --from=skill-download /opt/mcaimi-skills/git-summary /home/opencode/.config/opencode/skills/git-summary
 COPY --from=skill-download /opt/mcaimi-skills/security-auditor /home/opencode/.config/opencode/skills/security-auditor
 COPY --from=skill-download /opt/mcaimi-skills/wikipedia /home/opencode/.config/opencode/skills/wikipedia
+COPY --from=skill-download /opt/mcaimi-skills/memory-cube /home/opencode/.config/opencode/skills/memory-cube
+COPY --from=skill-download /opt/mcaimi-skills/port-scanner /home/opencode/.config/opencode/skills/port-scanner
+COPY --from=skill-download /opt/mcaimi-skills/reverse-engineering /home/opencode/.config/opencode/skills/reverse-engineering
 COPY scripts/entry.sh /usr/local/bin/entrypoint
 COPY config/opencode.json /home/opencode/.config/opencode/opencode.json
-COPY config/tui.json /home/opencode/.config/opencode/tui.json
+COPY config/cli.json /home/opencode/.config/opencode/cli.json
 
 # Upload custom subagents
 COPY agents/deep-security-auditor.md /home/opencode/.config/opencode/agents/deep-security-auditor.md
