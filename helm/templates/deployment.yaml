@@ -36,6 +36,17 @@ spec:
           containerPort: {{ .Values.service.targetPort }}
           protocol: TCP
         env:
+          - name: SERVER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "opencode-web.secretName" . }}
+                key: {{ .Values.auth.serverPasswordKey }}
+          - name: APIKEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "opencode-web.secretName" . }}
+                key: {{ .Values.auth.apiKeyKey }}
+                optional: true
           {{- if .Values.env }}
           {{- toYaml .Values.env | nindent 10 }}
           {{- end }}
@@ -76,6 +87,10 @@ spec:
         - name: openchamber-data
           mountPath: {{ .Values.openchamber.persistence.mountPath }}
         {{- end }}
+        {{- if .Values.opencode.persistence.enabled }}
+        - name: opencode-state
+          mountPath: {{ .Values.opencode.persistence.mountPath }}
+        {{- end }}
       volumes:
       {{- if .Values.persistence.enabled }}
       - name: opencode-data
@@ -86,6 +101,11 @@ spec:
       - name: openchamber-data
         persistentVolumeClaim:
           claimName: {{ include "opencode-web.fullname" . }}-openchamber
+      {{- end }}
+      {{- if .Values.opencode.persistence.enabled }}
+      - name: opencode-state
+        persistentVolumeClaim:
+          claimName: {{ include "opencode-web.fullname" . }}-opencode
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

@@ -11,11 +11,11 @@ The chart automatically configures `NO_PROXY` to exclude Kubernetes/OpenShift in
 When you enable proxy without specifying `proxy.noProxy`, the following are automatically excluded:
 
 ```
-localhost,127.0.0.1,.local,.svc,.svc.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16
+localhost,127.0.0.1,::1,.local,.svc,.svc.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16
 ```
 
 These defaults include:
-- **localhost/127.0.0.1**: Local loopback
+- **localhost/127.0.0.1/::1**: Local loopback (always appended by the entrypoint, OpenChamber reaches OpenCode over loopback)
 - **.local**: mDNS/Bonjour services
 - **.svc, .svc.cluster.local**: All Kubernetes services
 - **kubernetes.default.svc**: Kubernetes API server
@@ -35,7 +35,7 @@ proxy:
 
 **Generated NO_PROXY:**
 ```
-localhost,127.0.0.1,.local,.svc,.svc.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16
+localhost,127.0.0.1,::1,.local,.svc,.svc.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16
 ```
 
 **Install command:**
@@ -64,7 +64,7 @@ proxy:
 
 **Generated NO_PROXY:**
 ```
-localhost,127.0.0.1,.local,.svc,.svc.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16,.internal.corp,.cluster.internal,registry.internal.corp,artifactory.corp.example.com
+localhost,127.0.0.1,::1,.local,.svc,.svc.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16,.internal.corp,.cluster.internal,registry.internal.corp,artifactory.corp.example.com
 ```
 
 ## Scenario 3: OpenShift-Specific Network Configuration
@@ -84,7 +84,7 @@ proxy:
 
 **Generated NO_PROXY:**
 ```
-localhost,127.0.0.1,.local,.svc,.svc.cluster.local,kubernetes.default.svc.cluster.local,172.30.0.0/16,10.128.0.0/14
+localhost,127.0.0.1,::1,.local,.svc,.svc.cluster.local,kubernetes.default.svc.cluster.local,172.30.0.0/16,10.128.0.0/14
 ```
 
 **How to find your cluster's network CIDRs:**
@@ -207,15 +207,13 @@ proxy:
     - "172.16.0.0/12"
     - "192.168.0.0/16"
 
+auth:
+  existingSecret: opencode-credentials  # keys: server-password, api-key
+
 env:
-  - name: OPENCODE_SERVER_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: opencode-credentials
-        key: password
-  - name: OPENSHIFT_LLM_INFERENCE_ENDPOINT
+  - name: INFERENCE_ENDPOINT
     value: "http://inference-service.ai-platform.svc.cluster.local:8080"
-  - name: OPENSHIFT_DEPLOYED_MODEL_NAME
+  - name: MODEL_NAME
     value: "qwen-coder"
 
 resources:
