@@ -2,14 +2,23 @@
   "$schema": "https://opencode.ai/config.json",
   "formatter": true,
   "lsp": true,
-  "enabled_providers": [
-    "openshift"
+  "policies": [
+    {
+      "action": "provider.use",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "provider.use",
+      "resource": "openshift",
+      "effect": "allow"
+    }
   ],
-  "provider": {
+  "providers": {
     "openshift": {
-      "npm": "@ai-sdk/openai-compatible",
       "name": "vLLM",
-      "options": {
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
         "baseURL": "{env:OPENSHIFT_LLM_INFERENCE_ENDPOINT}",
         "apiKey": "{env:OPENSHIFT_AI_VLLM_API_KEY}"
       },
