@@ -40,9 +40,9 @@ persistence:
   storageClassName: ocs-storagecluster-ceph-rbd
 
 env:
-  - name: OPENCODE_SERVER_PASSWORD
+  - name: SERVER_PASSWORD
     value: "mypassword"
-  - name: OPENSHIFT_LLM_INFERENCE_ENDPOINT
+  - name: INFERENCE_ENDPOINT
     value: "http://my-inference-service.namespace.svc:8080"
 ```
 
@@ -69,7 +69,10 @@ helm install opencode-web ./helm -f custom-values.yaml
 | `persistence.enabled` | Enable persistent storage | `false` |
 | `persistence.size` | PVC size | `1Gi` |
 | `persistence.storageClassName` | Storage class name | `""` |
-| `persistence.mountPath` | Mount path in container | `/tmp/opencode` |
+| `persistence.mountPath` | Mount path in container | `/workspace` |
+| `dataPersistence.enabled` | Persist opencode session database | `false` |
+| `dataPersistence.size` | Session data PVC size | `1Gi` |
+| `dataPersistence.mountPath` | Session data mount path | `/home/opencode/.local/share/opencode` |
 | `proxy.enabled` | Enable proxy configuration | `false` |
 | `proxy.httpProxy` | HTTP proxy URL | `""` |
 | `proxy.httpsProxy` | HTTPS proxy URL | `""` |
@@ -80,10 +83,11 @@ helm install opencode-web ./helm -f custom-values.yaml
 
 The following environment variables can be customized via `env` array in values.yaml:
 
-- `OPENCODE_DISABLE_AUTOUPDATE`: Disable automatic updates (default: `true`)
-- `OPENCODE_SERVER_PASSWORD`: Web UI password (default: `redhat`)
-- `OPENSHIFT_LLM_INFERENCE_ENDPOINT`: LLM inference endpoint URL
-- `OPENSHIFT_DEPLOYED_MODEL_NAME`: Model name to use (default: `qwen-coder`)
+- `DISABLE_AUTOUPDATE`: Disable automatic updates (default: `true`; legacy name `OPENCODE_AUTOUPDATE` is still read)
+- `SERVER_PASSWORD`: Web UI password (default: `redhat`, username is always `opencode`)
+- `INFERENCE_ENDPOINT`: LLM inference endpoint URL
+- `MODEL_NAME`: Model name to use (default: `qwen-coder`)
+- `APIKEY`: API key for the inference endpoint
 
 ### Proxy Configuration
 
@@ -154,7 +158,9 @@ The chart creates a dedicated service account (`opencode-sa`) for enhanced secur
 
 ### Persistent Storage (Optional)
 
-When enabled, a PersistentVolumeClaim is created and mounted at `/tmp/opencode` for persistent data storage.
+When enabled, a PersistentVolumeClaim is created and mounted at `/workspace` for persistent data storage.
+
+opencode v2 stores sessions in an SQLite database under `/home/opencode/.local/share/opencode`. Set `dataPersistence.enabled=true` to keep session history across pod restarts.
 
 Enable persistence:
 

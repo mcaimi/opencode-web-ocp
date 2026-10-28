@@ -51,7 +51,7 @@ proxy:
     apiServer: "kubernetes.default.svc.cluster.local"
 
 env:
-  - name: OPENCODE_AUTOUPDATE
+  - name: DISABLE_AUTOUPDATE
     value: "true"
   - name: SERVER_PASSWORD
     value: "changeme"

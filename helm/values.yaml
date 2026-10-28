@@ -34,6 +34,14 @@ persistence:
   size: 1Gi
   mountPath: /workspace
 
+# opencode v2 keeps sessions in an SQLite database under ~/.local/share/opencode
+dataPersistence:
+  enabled: false
+  storageClassName: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /home/opencode/.local/share/opencode
+
 resources:
   limits:
     cpu: 1000m
@@ -43,7 +51,7 @@ resources:
     memory: 512Mi
 
 env:
-  - name: OPENCODE_AUTOUPDATE
+  - name: DISABLE_AUTOUPDATE
     value: "true"
   - name: SERVER_PASSWORD
     value: "redhat"

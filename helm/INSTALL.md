@@ -90,9 +90,9 @@ proxy:
     - "registry.internal.corp"
 
 env:
-  - name: OPENCODE_SERVER_PASSWORD
+  - name: SERVER_PASSWORD
     value: "my-secure-password"
-  - name: OPENSHIFT_LLM_INFERENCE_ENDPOINT
+  - name: INFERENCE_ENDPOINT
     value: "http://my-inference-service.namespace.svc:8080"
 
 resources:
@@ -142,7 +142,7 @@ https://<route-hostname>
 ```
 
 Default credentials:
-- Password: `redhat` (or your custom value from `OPENCODE_SERVER_PASSWORD`)
+- Password: `redhat` (or your custom value from `SERVER_PASSWORD`), username: `opencode`
 
 ### 4. Verify Proxy Configuration (if enabled)
 

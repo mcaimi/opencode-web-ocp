@@ -15,3 +15,21 @@ spec:
   storageClassName: {{ .Values.persistence.storageClassName }}
   {{- end }}
 {{- end }}
+{{- if .Values.dataPersistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "opencode-web.fullname" . }}-state
+  labels:
+    {{- include "opencode-web.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.dataPersistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.dataPersistence.size }}
+  {{- if .Values.dataPersistence.storageClassName }}
+  storageClassName: {{ .Values.dataPersistence.storageClassName }}
+  {{- end }}
+{{- end }}
