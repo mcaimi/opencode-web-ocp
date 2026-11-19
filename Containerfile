@@ -6,7 +6,7 @@ ARG UBI_IMAGE=registry.access.redhat.com/ubi10/ubi-minimal:10.1
 FROM ${UBI_IMAGE} AS opencode-download
 ARG TARGETARCH
 # pinned: releases/latest still tracks the v1 line
-ARG OPENCODE_VERSION=2.2.0
+ARG OPENCODE_VERSION=2.3.2
 
 RUN microdnf upgrade -y && microdnf install -y \
   curl \
