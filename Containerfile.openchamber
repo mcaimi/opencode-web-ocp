@@ -51,7 +51,7 @@ RUN set -eux; \
 
 # Runtime Image
 FROM ${UBI_IMAGE}
-ARG OPENCHAMBER_VERSION=2.5.2
+ARG OPENCHAMBER_VERSION=2.7.2
 
 # install requirements (openchamber needs node >= 24.14)
 RUN microdnf upgrade -y && microdnf install -y \
